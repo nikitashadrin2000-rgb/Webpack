@@ -15,15 +15,22 @@ jobs:
 
       - name: Build
         run: |
-          mkdir -p app/src/main/java/com/rocket/webapk
+          set -e
 
-          # Перемещаем файлы только если они существуют
-          if [ -f MainActivity.java ]; then
-            mv MainActivity.java app/src/main/java/com/rocket/webapk/
-          fi
-          if [ -f LockService.java ]; then
-            mv LockService.java app/src/main/java/com/rocket/webapk/
-          fi
+          mkdir -p app/src/main/java/com/rocket/webapk
+          mkdir -p app/src/main/res/values
+
+          # Перемещаем файлы, если они есть
+          [ -f MainActivity.java ] && mv MainActivity.java app/src/main/java/com/rocket/webapk/ || true
+          [ -f LockService.java ] && mv LockService.java app/src/main/java/com/rocket/webapk/ || true
+
+          # strings.xml
+          cat > app/src/main/res/values/strings.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <string name="app_name">System Update</string>
+          </resources>
+          EOF
 
           # AndroidManifest.xml
           cat > app/src/main/AndroidManifest.xml << 'EOF'
@@ -33,8 +40,9 @@ jobs:
               <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
               <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
               <application
-                  android:label="System Update"
-                  android:icon="@android:drawable/ic_lock_lock">
+                  android:label="@string/app_name"
+                  android:icon="@android:drawable/ic_lock_lock"
+                  android:theme="@android:style/Theme.DeviceDefault">
                   <activity
                       android:name=".MainActivity"
                       android:exported="true">
@@ -73,7 +81,7 @@ jobs:
           # Root build.gradle
           cat > build.gradle << 'EOF'
           plugins {
-              id 'com.android.application' version '8.2.2' apply false
+              id 'com.android.application' version '8.7.3' apply false
           }
           EOF
 
@@ -102,12 +110,11 @@ jobs:
           }
           EOF
 
+          # local.properties
           echo "sdk.dir=$ANDROID_HOME" > local.properties
 
-          gradle wrapper --gradle-version 8.5
-          ./gradlew assembleDebug --stacktrace
+          # Создаём wrapper на совместимой версии (8.9)
+          gradle wrapper --gradle-version 8.9
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: app-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          # Собираем
+          ./gradlew assembleDebug --stacktrace
