@@ -20,11 +20,10 @@ jobs:
         run: |
           set -e
 
-          # Создаём структуру
           mkdir -p app/src/main/java/com/rocket/webapk
           mkdir -p app/src/main/res/values
 
-          # Создаём простой MainActivity
+          # MainActivity
           cat > app/src/main/java/com/rocket/webapk/MainActivity.java << 'EOF'
           package com.rocket.webapk;
 
@@ -125,6 +124,11 @@ jobs:
 
           echo "sdk.dir=$ANDROID_HOME" > local.properties
 
-          # Генерируем wrapper и собираем
           gradle wrapper --gradle-version 8.9
           ./gradlew assembleDebug --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
