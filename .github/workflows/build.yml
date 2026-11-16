@@ -13,16 +13,12 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Build
         run: |
-          # Create project structure
+          # Создаём структуру проекта
           mkdir -p app/src/main/java/com/rocket/webapk
           mkdir -p app/src/main/res
 
-          # Move MainActivity if it exists in root
           if [ -f MainActivity.java ]; then
             mv MainActivity.java app/src/main/java/com/rocket/webapk/
           fi
@@ -93,30 +89,18 @@ jobs:
                   versionName "1.0"
               }
 
-              buildTypes {
-                  release {
-                      minifyEnabled false
-                  }
-              }
-
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
                   targetCompatibility JavaVersion.VERSION_17
               }
           }
-
-          dependencies {
-              // no extra dependencies needed
-          }
           EOF
 
-          # local.properties (not really needed on GitHub Actions, but harmless)
+          # Указываем путь к SDK (уже есть на раннере)
           echo "sdk.dir=$ANDROID_HOME" > local.properties
 
-          # Generate Gradle Wrapper
+          # Генерируем wrapper и собираем
           gradle wrapper --gradle-version 8.5
-
-          # Build
           ./gradlew assembleDebug --stacktrace
 
       - uses: actions/upload-artifact@v4
