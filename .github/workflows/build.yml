@@ -18,34 +18,60 @@ jobs:
 
       - name: Build
         run: |
+          set -e
+
+          # Создаём структуру
           mkdir -p app/src/main/java/com/rocket/webapk
           mkdir -p app/src/main/res/values
 
-          [ -f MainActivity.java ] && mv MainActivity.java app/src/main/java/com/rocket/webapk/ || true
-          [ -f LockService.java ] && mv LockService.java app/src/main/java/com/rocket/webapk/ || true
+          # Создаём простой MainActivity
+          cat > app/src/main/java/com/rocket/webapk/MainActivity.java << 'EOF'
+          package com.rocket.webapk;
 
-          echo '<?xml version="1.0" encoding="utf-8"?><resources><string name="app_name">System Update</string></resources>' > app/src/main/res/values/strings.xml
+          import android.app.Activity;
+          import android.os.Bundle;
+          import android.widget.TextView;
 
+          public class MainActivity extends Activity {
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  TextView tv = new TextView(this);
+                  tv.setText("System Update");
+                  setContentView(tv);
+              }
+          }
+          EOF
+
+          # strings.xml
+          cat > app/src/main/res/values/strings.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <string name="app_name">System Update</string>
+          </resources>
+          EOF
+
+          # AndroidManifest.xml
           cat > app/src/main/AndroidManifest.xml << 'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-              <uses-permission android:name="android.permission.INTERNET"/>
-              <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
-              <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
               <application
                   android:label="@string/app_name"
-                  android:icon="@android:drawable/ic_lock_lock">
-                  <activity android:name=".MainActivity" android:exported="true">
+                  android:icon="@android:drawable/ic_lock_lock"
+                  android:theme="@android:style/Theme.DeviceDefault">
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true">
                       <intent-filter>
                           <action android:name="android.intent.action.MAIN" />
                           <category android:name="android.intent.category.LAUNCHER" />
                       </intent-filter>
                   </activity>
-                  <service android:name=".LockService" android:exported="false"/>
               </application>
           </manifest>
           EOF
 
+          # settings.gradle
           cat > settings.gradle << 'EOF'
           pluginManagement {
               repositories {
@@ -65,19 +91,23 @@ jobs:
           include ':app'
           EOF
 
+          # Root build.gradle
           cat > build.gradle << 'EOF'
           plugins {
               id 'com.android.application' version '8.7.3' apply false
           }
           EOF
 
+          # app/build.gradle
           cat > app/build.gradle << 'EOF'
           plugins {
               id 'com.android.application'
           }
+
           android {
               namespace 'com.rocket.webapk'
               compileSdk 34
+
               defaultConfig {
                   applicationId "com.rocket.webapk"
                   minSdk 21
@@ -85,6 +115,7 @@ jobs:
                   versionCode 1
                   versionName "1.0"
               }
+
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
                   targetCompatibility JavaVersion.VERSION_17
@@ -94,5 +125,6 @@ jobs:
 
           echo "sdk.dir=$ANDROID_HOME" > local.properties
 
+          # Генерируем wrapper и собираем
           gradle wrapper --gradle-version 8.9
           ./gradlew assembleDebug --stacktrace
