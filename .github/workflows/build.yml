@@ -14,9 +14,13 @@ jobs:
           mkdir -p app/src/main/java/com/rocket/webapk
           mv MainActivity.java app/src/main/java/com/rocket/webapk/
           echo '<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.rocket.webapk"><uses-permission android:name="android.permission.INTERNET"/><application android:label="System Update" android:icon="@android:drawable/ic_lock_lock"><activity android:name=".MainActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter></activity></application></manifest>' > app/src/main/AndroidManifest.xml
+          
+          echo "buildscript { repositories { google(); mavenCentral() } dependencies { classpath 'com.android.tools.build:gradle:8.1.1' } }" > build.gradle
+          echo "include ':app'" > settings.gradle
+          
           echo "apply plugin: 'com.android.application'" > app/build.gradle
           echo "android { namespace 'com.rocket.webapk' compileSdk 34 defaultConfig { applicationId 'com.rocket.webapk' minSdk 21 targetSdk 34 versionCode 1 versionName '1.0' } }" >> app/build.gradle
-          echo "include ':app'" > settings.gradle
+          
           echo "sdk.dir=/usr/local/lib/android/sdk" > local.properties
           gradle wrapper --gradle-version 8.5
           ./gradlew assembleDebug
